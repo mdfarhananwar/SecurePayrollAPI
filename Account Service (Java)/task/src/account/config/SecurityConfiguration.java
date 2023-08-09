@@ -1,5 +1,6 @@
 package account.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,7 +16,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfiguration {
 
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
-
+    @Autowired
     public SecurityConfiguration(RestAuthenticationEntryPoint restAuthenticationEntryPoint) {
         this.restAuthenticationEntryPoint = restAuthenticationEntryPoint;
     }
@@ -28,8 +29,9 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf.disable()) // For Postman
                 .headers(headers -> headers.frameOptions().disable()) // For the H2 console
                 .authorizeHttpRequests(auth -> auth  // manage access
-                                .requestMatchers(HttpMethod.POST, "/api/signup").permitAll()
-                        // other matchers
+                                .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
+                                .requestMatchers("/actuator/shutdown").permitAll()
+                                .anyRequest().authenticated()
                 )
                 .sessionManagement(sessions -> sessions
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // no session

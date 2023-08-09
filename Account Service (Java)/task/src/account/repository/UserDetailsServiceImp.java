@@ -23,13 +23,19 @@ public class UserDetailsServiceImp implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Employee employee = employeeService.findByEmail(username);
-
+        System.out.println(username);
+        System.out.println("Enter");
+        Employee employee = employeeService.findByEmail(username.toLowerCase());
+        System.out.println(employee.toString());
         if (employee == null) {
             throw new UsernameNotFoundException("Not found: " + username);
         }
         String roleWithPrefix = "ROLE_" + employee.getRole().getName();
         List<SimpleGrantedAuthority> grantedAuthorities = Collections.singletonList(new SimpleGrantedAuthority(roleWithPrefix));
-        return new org.springframework.security.core.userdetails.User(employee.getEmail(), employee.getPassword(), grantedAuthorities);
+        UserDetails userDetails =  new org.springframework.security.core.userdetails.User(employee.getEmail().toLowerCase(), employee.getPassword(), grantedAuthorities);
+        System.out.println(userDetails.getUsername());
+        System.out.println(userDetails.getPassword());
+        System.out.println("userdetails");
+        return userDetails;
     }
 }

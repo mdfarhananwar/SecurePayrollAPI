@@ -1,5 +1,6 @@
 package account.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
@@ -16,6 +17,7 @@ public class Employee {
 
     @ManyToOne(fetch = FetchType.EAGER) // Since each user has one role, use ManyToOne association
     @JoinColumn(name = "role_id") // The column in "user" table that references the "role" table
+    @JsonIgnore
     private Role role;
 
     public Employee() {
@@ -24,7 +26,7 @@ public class Employee {
     public Employee(String name, String lastname, String email, String password) {
         this.name = name;
         this.lastname = lastname;
-        this.email = email;
+        this.email = email.toLowerCase();
         this.password = password;
     }
 
@@ -45,11 +47,11 @@ public class Employee {
     }
 
     public String getEmail() {
-        return email;
+        return email.toLowerCase();
     }
 
     public void setEmail(String email) {
-        this.email = email;
+        this.email = email.toLowerCase();
     }
 
     public String getPassword() {
@@ -66,5 +68,25 @@ public class Employee {
 
     public void setRole(final Role role) {
         this.role = role;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    @Override
+    public String toString() {
+        return "Employee{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", lastname='" + lastname + '\'' +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", role=" + role +
+                '}';
     }
 }

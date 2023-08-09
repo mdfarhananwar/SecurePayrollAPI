@@ -14,7 +14,7 @@ public class UserDetailsImp implements UserDetails {
     private final String password;
     private final List<GrantedAuthority> rolesAndAuthorities;
     public UserDetailsImp(Employee employee) {
-        this.username = employee.getEmail();
+        this.username = employee.getEmail().toLowerCase();
         this.password = employee.getPassword();
         String roleWithPrefix = "ROLE_" + employee.getRole().getName();
         rolesAndAuthorities = List.of(new SimpleGrantedAuthority(roleWithPrefix));
@@ -33,7 +33,7 @@ public class UserDetailsImp implements UserDetails {
 
     @Override
     public String getUsername() {
-        return username;
+        return username.toLowerCase();
     }
 
     @Override
@@ -55,4 +55,5 @@ public class UserDetailsImp implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
 }
