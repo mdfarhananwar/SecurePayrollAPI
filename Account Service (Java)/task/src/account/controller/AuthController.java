@@ -41,9 +41,9 @@ public class AuthController {
     }
 
     @GetMapping("/api/empl/payment")
-    public ResponseEntity<?> getEmployee() {
+    public ResponseEntity<?> getEmployee(@AuthenticationPrincipal UserDetails userDetails) {
         //System.out.println(authentication.getName());
-        return ResponseEntity.ok("Farhan");
+        return employeeService.getEmployee(userDetails);
     }
 
 }

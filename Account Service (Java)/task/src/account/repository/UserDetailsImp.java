@@ -16,7 +16,7 @@ public class UserDetailsImp implements UserDetails {
     public UserDetailsImp(Employee employee) {
         this.username = employee.getEmail().toLowerCase();
         this.password = employee.getPassword();
-        String roleWithPrefix = "ROLE_" + employee.getRole().getName();
+        String roleWithPrefix = "ROLE_" + "USER";
         rolesAndAuthorities = List.of(new SimpleGrantedAuthority(roleWithPrefix));
 
     }

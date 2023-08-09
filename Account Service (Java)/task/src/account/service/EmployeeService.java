@@ -6,11 +6,14 @@ import account.model.Role;
 import account.repository.EmployeeRepository;
 import account.repository.RoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -42,25 +45,33 @@ public class EmployeeService {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST));
         }
-        Role role = new Role();
-        role = roleRepository.save(role);
-        employee.setRole(role);
+        System.out.println("Before Password ENcoder");
+        System.out.println(employee.getPassword());
+        employee.setPassword(passwordEncoder().encode(employee.getPassword()));
+//        Role role = new Role();
+//        role = roleRepository.save(role);
+//        employee.setRole(role);
+        //employee.setPassword(passwordEncoder().encode(employee.getPassword()));
         employee = employeeRepository.save(employee);
+        System.out.println(employee.getPassword());
+        System.out.println("getting password from Employee After password Encode");
         EmployeeDTO employeeDTO = new EmployeeDTO(employee);
         return ResponseEntity.ok(employeeDTO);
     }
 
-//    public ResponseEntity<?> getEmployee() {
-//        System.out.println("Enter");
-////        System.out.println(userDetails.getUsername());
-////        String email = userDetails.getUsername();
-////        Employee employee =  findByEmail(email);
-////        if (employee == null) {
-////            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-////                    .body(createUnauthorizedResponse());
-////        }
-////        return ResponseEntity.ok(employee);
-//    }
+    public ResponseEntity<?> getEmployee(@AuthenticationPrincipal UserDetails userDetails) {
+        System.out.println("Enter");
+        System.out.println(userDetails.getUsername());
+        String email = userDetails.getUsername();
+        Employee employee =  findByEmail(email);
+        if (employee == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(createUnauthorizedResponse());
+        }
+        return ResponseEntity.ok(employee);
+    }
+
+
 
     public boolean isNotValidEmployee(Employee employee) {
         return employee == null ||
@@ -111,6 +122,11 @@ public class EmployeeService {
         unauthorizedResponse.put("message", "");
         unauthorizedResponse.put("path", "/api/empl/payment");
         return unauthorizedResponse;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
 
