@@ -1,10 +1,7 @@
 package account.service;
 
 import account.model.*;
-import account.repository.EmployeeRepository;
-import account.repository.GroupRepository;
-import account.repository.PayrollRepository;
-import account.repository.RoleRepository;
+import account.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
@@ -29,16 +26,20 @@ public class EmployeeService {
     private final EmployeeRepository employeeRepository;
     RoleRepository roleRepository;
     private final PayrollRepository payrollRepository;
-    private GroupRepository groupRepository;
+    private final GroupRepository groupRepository;
+    private final EventRepository eventRepository;
+
+    List<Event> eventList = new ArrayList<>();
 
 
 
     @Autowired
-    public EmployeeService(EmployeeRepository employeeRepository, RoleRepository roleRepository, PayrollRepository payrollRepository, GroupRepository groupRepository) {
+    public EmployeeService(EmployeeRepository employeeRepository, RoleRepository roleRepository, PayrollRepository payrollRepository, GroupRepository groupRepository, EventRepository eventRepository) {
         this.employeeRepository = employeeRepository;
         this.roleRepository = roleRepository;
         this.payrollRepository = payrollRepository;
         this.groupRepository = groupRepository;
+        this.eventRepository = eventRepository;
     }
 
 
@@ -81,13 +82,13 @@ public class EmployeeService {
         saveEmployee.setPassword(passwordEncoder().encode(employee.getPassword()));
         saveEmployee.setName(employee.getName());
         saveEmployee.setLastname(employee.getLastname());
-//        Role role = new Role();
-//        role = roleRepository.save(role);
-//        employee.setRole(role);
-        //employee.setPassword(passwordEncoder().encode(employee.getPassword()));
         saveEmployee = assignRoles(saveEmployee);
         System.out.println(saveEmployee.getPassword());
         System.out.println("getting password from Employee After password Encode");
+        Event event = new Event( Calendar.getInstance().getTime(),"CREATE_USER",
+                employee.getEmail(), "Anonymous","/api/auth/signup");
+        eventRepository.save(event);
+        eventList.add(event);
         EmployeeDTO employeeDTO = new EmployeeDTO(saveEmployee);
         return ResponseEntity.ok(employeeDTO);
         //return ResponseEntity.ok(employeeDTO);
@@ -171,6 +172,10 @@ public class EmployeeService {
         employee.setPassword(passwordEncoder().encode(newPassword));
         System.out.println("After Password Change : - " + employee.getPassword());
         employeeRepository.save(employee);
+        Event event = new Event( Calendar.getInstance().getTime(),"CHANGE_PASSWORD",
+                employee.getEmail(), employee.getEmail(),"/api/auth/changepass");
+        eventRepository.save(event);
+        eventList.add(event);
         PasswordSuccessResponse passwordSuccessResponse = new PasswordSuccessResponse(email,
                 "The password has been updated successfully");
         return ResponseEntity.ok(passwordSuccessResponse);
@@ -329,6 +334,11 @@ public class EmployeeService {
         if (operation == Operation.GRANT) {
             employee.getRoles().add(updateRole);
             employeeRepository.save(employee);
+            String object = "Grant role " + updateRole + " to " + employee.getEmail();
+            Event event = new Event( Calendar.getInstance().getTime(),"GRANT_ROLE",
+                    userEmail, object,"/api/admin/user/role");
+            eventRepository.save(event);
+            eventList.add(event);
         }
         if (operation == Operation.REMOVE) {
             if (!employee.getRoles().contains(updateRole)) {
@@ -338,16 +348,19 @@ public class EmployeeService {
                                 "/api/admin/user/role"));
             }
             if (employee.getRoles().size() == 1) {
-
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                             .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                                     "The user must have at least one role!",
                                     "/api/admin/user/role"));
-
             }
 
             employee.getRoles().remove(updateRole);
             employeeRepository.save(employee);
+            String object = "Remove role " + updateRole + " to " + employee.getEmail();
+            Event event = new Event( Calendar.getInstance().getTime(),"REMOVE_ROLE",
+                    userEmail, object,"/api/admin/user/role");
+            eventRepository.save(event);
+            eventList.add(event);
         }
         EmployeeDTO employeeDTO = new EmployeeDTO(employee);
         return ResponseEntity.ok(employeeDTO);
@@ -569,5 +582,29 @@ public class EmployeeService {
             }
         }
         return false;
+    }
+
+    public ResponseEntity<?> lockUnlockUser(LockUnlockRequest lockUnlockRequest) {
+        LockUnlockEnum operation = lockUnlockRequest.getOperation();
+        String email = lockUnlockRequest.getUser();
+        if (!employeeRepository.existsByEmailIgnoreCase(email)) {
+            //
+        }
+        Optional<Employee> byEmailIgnoreCase = employeeRepository.findByEmailIgnoreCase(email);
+        Employee employee = byEmailIgnoreCase.orElse(new Employee());
+        if (isUserAdmin(employee)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                            "Can't lock the ADMINISTRATOR!",
+                            "/api/admin/user/access"));
+        }
+        String status = "";
+        if (operation == LockUnlockEnum.LOCK) {
+            status = "User " + email + " locked!";
+        } else {
+            status = "User " + email + " unlocked!";
+        }
+        return ResponseEntity.ok(new StatusResponse(status));
+
     }
 }

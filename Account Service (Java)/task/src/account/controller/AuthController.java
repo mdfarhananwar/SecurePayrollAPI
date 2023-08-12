@@ -104,5 +104,10 @@ public class AuthController {
         }
     }
 
+    @PutMapping("api/admin/user/access")
+    public ResponseEntity<?> lockUnlockUser(@RequestBody LockUnlockRequest lockUnlockRequest) {
+        return employeeService.lockUnlockUser(lockUnlockRequest);
+    }
+
 
 }
