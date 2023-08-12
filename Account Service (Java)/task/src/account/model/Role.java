@@ -1,5 +1,7 @@
 package account.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 import java.util.Collection;
@@ -11,22 +13,27 @@ public class Role {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @ManyToMany(mappedBy = "role")
-    private Collection<Employee> employees;
+//    @ManyToMany(mappedBy = "role")
+//    private Collection<Employee> employees;
+//
+//    public Collection<Employee> getEmployees() {
+//        return employees;
+//    }
+//
+//    public void setEmployees(Collection<Employee> employees) {
+//        this.employees = employees;
+//    }
 
-    public Collection<Employee> getEmployees() {
-        return employees;
-    }
-
-    public void setEmployees(Collection<Employee> employees) {
-        this.employees = employees;
-    }
-
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "roles_privileges", joinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "privilege_id", referencedColumnName = "id"))
+    @JsonIgnore
     private Collection<Privilege> privileges;
 
-    private String name = "USER";
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "group_id")
+    @JsonIgnore
+    private Group group;
+    private String name;
 
     public Role() {
         super();
@@ -61,6 +68,14 @@ public class Role {
 
     public void setPrivileges(final Collection<Privilege> privileges) {
         this.privileges = privileges;
+    }
+
+    public Group getGroup() {
+        return group;
+    }
+
+    public void setGroup(Group group) {
+        this.group = group;
     }
 
     @Override

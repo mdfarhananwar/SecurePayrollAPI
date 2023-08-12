@@ -79,20 +79,57 @@ public class SecurityConfiguration  {
     }
 
     private final UserDetailsServiceImp userDetailsService;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
     @Autowired
-    public SecurityConfiguration(UserDetailsServiceImp userDetailsService) {
+    public SecurityConfiguration(UserDetailsServiceImp userDetailsService, CustomAccessDeniedHandler customAccessDeniedHandler) {
         this.userDetailsService = userDetailsService;
+        this.customAccessDeniedHandler = customAccessDeniedHandler;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
-                        .requestMatchers("/actuator/shutdown").permitAll()
-                        .requestMatchers("/api/empl/payment").authenticated()
+//                .authorizeHttpRequests(authorize -> {
+//                            try {
+//                                authorize
+//                                        .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
+//                                        .requestMatchers("/actuator/shutdown").permitAll()
+//                                        .requestMatchers("/api/acct/payments").hasRole("ACCOUNTANT")
+//                                        .requestMatchers("/api/empl/payment")
+//                                        .hasAnyRole("USER", "ACCOUNTANT")
+//                                        .requestMatchers("/api/auth/changepass")
+//                                        .hasAnyRole("ADMINISTRATOR", "USER", "ACCOUNTANT")
+//                                                .requestMatchers("/api/admin/user/**").hasRole("ADMINISTRATOR")
+//                                        .anyRequest()
+//                                        .authenticated()
+//                                        .exceptionHandling()
+//                                        .accessDeniedHandler(accessDeniedHandler())
+//                                        .and()
+//                                        .formLogin()
+//                                        .failureHandler(authenticationFailureHandler());
+//
+//                            } catch (Exception e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//                )
 
+    .authorizeRequests(authorize -> authorize
+                .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
+                .requestMatchers("/actuator/shutdown").permitAll()
+                .requestMatchers("/api/acct/payments").hasRole("ACCOUNTANT")
+                .requestMatchers("/api/empl/payment").hasAnyRole("USER", "ACCOUNTANT")
+                .requestMatchers("/api/auth/changepass").hasAnyRole("ADMINISTRATOR", "USER", "ACCOUNTANT")
+                .requestMatchers("/api/admin/user/**").hasRole("ADMINISTRATOR")
+                .anyRequest().authenticated()
+        )
+                .exceptionHandling(exceptionHandling -> exceptionHandling
+                        .accessDeniedHandler(customAccessDeniedHandler)
                 )
+                .formLogin(formLogin -> formLogin
+                        .failureHandler(authenticationFailureHandler())
+                )
+
                 .sessionManagement(sessionManagement -> sessionManagement
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
@@ -101,8 +138,25 @@ public class SecurityConfiguration  {
                 .headers(headers -> headers.frameOptions().disable())
                 .httpBasic(Customizer.withDefaults());
 
+
         return http.build();
     }
+//    @Bean
+//    public AuthenticationFailureHandler authenticationFailureHandler() {
+//        String message = "Access Denied!";
+//        return new CustomAuthenticationFailureHandler(message);
+//    }
+@Bean
+public CustomAuthenticationFailureHandler authenticationFailureHandler() {
+    String customErrorMessage = "Authentication failed. Please check your credentials.";
+    return new CustomAuthenticationFailureHandler(customErrorMessage);
+}
+
+    @Bean
+    public CustomAuthenticationFailureHandler accessDeniedHandler() {
+        return new CustomAuthenticationFailureHandler("Access Denied!");
+    }
+
 
 //        @Bean
 //    public BCryptPasswordEncoder bCryptPasswordEncoder() {

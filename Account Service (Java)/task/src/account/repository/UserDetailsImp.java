@@ -7,22 +7,29 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class UserDetailsImp implements UserDetails {
 
     private final String username;
     private final String password;
-    private final List<GrantedAuthority> rolesAndAuthorities;
-    public UserDetailsImp(Employee employee) {
+//    private final Set<SimpleGrantedAuthority> rolesAndAuthorities;
+private final Set<SimpleGrantedAuthority> rolesAndAuthorities;
+    public UserDetailsImp(Employee employee, List<GrantedAuthority> rolesAndAuthorities) {
         this.username = employee.getEmail().toLowerCase();
         this.password = employee.getPassword();
-        String roleWithPrefix = "ROLE_" + "USER";
-        rolesAndAuthorities = List.of(new SimpleGrantedAuthority(roleWithPrefix));
+//        this.rolesAndAuthorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));;
 
+        this.rolesAndAuthorities = employee.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                .collect(Collectors.toSet());
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        System.out.println("INSIDE USERDETAILS : getAuthorities");
+        System.out.println(rolesAndAuthorities);
         return rolesAndAuthorities;
     }
 

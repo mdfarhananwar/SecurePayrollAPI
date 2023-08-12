@@ -1,11 +1,17 @@
 package account.model;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.TreeSet;
+
 public class EmployeeDTO {
 
     private Long id;
     private String name;
     private String lastname;
     private String email;
+
+    private Set<String> roles = new TreeSet<>();
 
     public EmployeeDTO() {
     }
@@ -15,6 +21,9 @@ public class EmployeeDTO {
         this.name = employee.getName();
         this.lastname = employee.getLastname();
         this.email = employee.getEmail();
+        for (Role role : employee.getRoles()) {
+            this.roles.add("ROLE_" + role.getName());
+        }
     }
 
     public String getName() {
@@ -47,5 +56,13 @@ public class EmployeeDTO {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Set<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(Set<String> roles) {
+        this.roles = roles;
     }
 }

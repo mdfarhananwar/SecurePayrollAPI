@@ -1,24 +1,46 @@
 package account.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Entity
 public class Employee {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
+
     private String name;
+
     private String lastname;
+
     private String email;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
-    @ManyToOne(fetch = FetchType.EAGER) // Since each user has one role, use ManyToOne association
-    @JoinColumn(name = "role_id") // The column in "user" table that references the "role" table
+//    @ManyToMany(fetch = FetchType.EAGER) // Since each user has one role, use ManyToOne association
+//    @JoinColumn(name = "role_id") // The column in "user" table that references the "role" table
+//    @JsonIgnore
+//    private List<Role> roles;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "employee_role",
+            joinColumns = @JoinColumn(name = "employee_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
     @JsonIgnore
-    private Role role;
+    private Set<Role> roles = new HashSet<>();
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "group_id")
+    @JsonIgnore
+    private Group group;
 
     public Employee() {
     }
@@ -47,11 +69,13 @@ public class Employee {
     }
 
     public String getEmail() {
-        return email.toLowerCase();
+        if (email != null) return email.toLowerCase();
+        return email;
     }
 
     public void setEmail(String email) {
-        this.email = email.toLowerCase();
+        if (email != null) this.email = email.toLowerCase();
+        this.email = email;
     }
 
     public String getPassword() {
@@ -62,12 +86,12 @@ public class Employee {
         this.password = password;
     }
 
-    public Role getRole() {
-        return role;
+    public Set<Role> getRoles() {
+        return roles;
     }
 
-    public void setRole(final Role role) {
-        this.role = role;
+    public void setRoles(final Set<Role> roles) {
+        this.roles = roles;
     }
 
     public Long getId() {
@@ -78,6 +102,14 @@ public class Employee {
         this.id = id;
     }
 
+    public Group getGroup() {
+        return group;
+    }
+
+    public void setGroup(Group group) {
+        this.group = group;
+    }
+
     @Override
     public String toString() {
         return "Employee{" +
@@ -86,7 +118,7 @@ public class Employee {
                 ", lastname='" + lastname + '\'' +
                 ", email='" + email + '\'' +
                 ", password='" + password + '\'' +
-                ", role=" + role +
+                ", role=" + roles +
                 '}';
     }
 }
