@@ -32,8 +32,10 @@ public class DataLoader {
         Role adminRole = new Role("ADMINISTRATOR");
         Role userRole = new Role("USER");
         Role accountantRole = new Role("ACCOUNTANT");
+        Role auditorRole = new Role("AUDITOR");
         roleRepository.save(adminRole);
         roleRepository.save(userRole);
         roleRepository.save(accountantRole);
+        roleRepository.save(auditorRole);
     }
 }

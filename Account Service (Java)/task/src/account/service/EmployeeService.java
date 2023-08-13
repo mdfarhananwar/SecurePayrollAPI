@@ -22,15 +22,12 @@ import java.util.stream.Collectors;
 
 @Service
 public class EmployeeService {
-
+    public static final int MAX_FAILED_ATTEMPTS = 5;
     private final EmployeeRepository employeeRepository;
     RoleRepository roleRepository;
     private final PayrollRepository payrollRepository;
     private final GroupRepository groupRepository;
     private final EventRepository eventRepository;
-
-    List<Event> eventList = new ArrayList<>();
-
 
 
     @Autowired
@@ -51,8 +48,8 @@ public class EmployeeService {
         if (isNotValidEmployee(employee)) {
             System.out.println("EnterISNOTVALID");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(createErrorResponse(HttpStatus.BAD_REQUEST,
-                            "/api/auth/signup"));
+                    .body(createErrorResponse(
+                    ));
         }
         if (isEmailRegistered(employee.getEmail())) {
             System.out.println("EnterISEmailRegistered");
@@ -78,17 +75,18 @@ public class EmployeeService {
         //Optional<Employee> byEmailIgnoreCase = employeeRepository.findByEmailIgnoreCase(employee.getEmail());
 
         Employee saveEmployee = new Employee();
-        saveEmployee.setEmail(employee.getEmail());
+        saveEmployee.setEmail(employee.getEmail().toLowerCase());
         saveEmployee.setPassword(passwordEncoder().encode(employee.getPassword()));
         saveEmployee.setName(employee.getName());
         saveEmployee.setLastname(employee.getLastname());
+        saveEmployee.setAccountNonLocked(true);
         saveEmployee = assignRoles(saveEmployee);
         System.out.println(saveEmployee.getPassword());
         System.out.println("getting password from Employee After password Encode");
         Event event = new Event( Calendar.getInstance().getTime(),"CREATE_USER",
-                employee.getEmail(), "Anonymous","/api/auth/signup");
+                "Anonymous" ,employee.getEmail().toLowerCase() ,"/api/auth/signup");
         eventRepository.save(event);
-        eventList.add(event);
+
         EmployeeDTO employeeDTO = new EmployeeDTO(saveEmployee);
         return ResponseEntity.ok(employeeDTO);
         //return ResponseEntity.ok(employeeDTO);
@@ -99,10 +97,37 @@ public class EmployeeService {
         System.out.println(userDetails.getUsername());
         String email = userDetails.getUsername();
         Employee employee =  findByEmail(email);
-        if (employee == null) {
+        if (!employeeRepository.existsByEmailIgnoreCase(email)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(createUnauthorizedResponse());
         }
+
+//        if (employee.isAccountNonLocked() &&
+//                employee.getFailedAttempt()  > MAX_FAILED_ATTEMPTS) {
+//            String object = "Lock user " + employee.getEmail().toLowerCase();
+//            Event event = new Event( Calendar.getInstance().getTime(),"LOCK_USER",
+//                    employee.getEmail().toLowerCase(), object,"/api/empl/payment");
+//            eventRepository.save(event);
+//
+//            lock(employee);
+//        }
+//
+//        if (employee.isAccountNonLocked() &&
+//                employee.getFailedAttempt()  == 4 ) {
+//            Event event = new Event( Calendar.getInstance().getTime(),"BRUTE_FORCE",
+//                    employee.getEmail().toLowerCase(),"/api/empl/payment","/api/empl/payment");
+//            eventRepository.save(event);
+//
+//        }
+//
+//        if (employee.isAccountNonLocked() &&
+//                employee.getFailedAttempt()  == 1 ) {
+//            Event event = new Event( Calendar.getInstance().getTime(),"LOGIN_FAILED",
+//                    employee.getEmail().toLowerCase(),"/api/empl/payment","/api/empl/payment");
+//            eventRepository.save(event);
+//
+//        }
+
         List<Payrolls> payrolls = payrollRepository.findByEmployee(email);
         List<EmployeeResponse> employeeResponses = new ArrayList<>();
         for (Payrolls payroll : payrolls) {
@@ -173,9 +198,9 @@ public class EmployeeService {
         System.out.println("After Password Change : - " + employee.getPassword());
         employeeRepository.save(employee);
         Event event = new Event( Calendar.getInstance().getTime(),"CHANGE_PASSWORD",
-                employee.getEmail(), employee.getEmail(),"/api/auth/changepass");
+                employee.getEmail().toLowerCase(), employee.getEmail().toLowerCase(),"/api/auth/changepass");
         eventRepository.save(event);
-        eventList.add(event);
+
         PasswordSuccessResponse passwordSuccessResponse = new PasswordSuccessResponse(email,
                 "The password has been updated successfully");
         return ResponseEntity.ok(passwordSuccessResponse);
@@ -218,12 +243,39 @@ public class EmployeeService {
 
     public ResponseEntity<?> getEmployeeWithPeriod(UserDetails userDetails, String period) {
         String email = userDetails.getUsername();
+
         if (!payrollRepository.existsByEmployeeAndPeriod(email,period)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                             "Error!", "/api/empl/payment"));
         }
-        Optional<Employee> employee = employeeRepository.findByEmailIgnoreCase(email);
+        Employee employee = findByEmail(email);
+//        if (employee.isAccountNonLocked() &&
+//                employee.getFailedAttempt()  > MAX_FAILED_ATTEMPTS) {
+//            String object = "Lock user " + employee.getEmail().toLowerCase();
+//            Event event = new Event( Calendar.getInstance().getTime(),"LOCK_USER",
+//                    employee.getEmail().toLowerCase(), object,"/api/empl/payment");
+//            eventRepository.save(event);
+//
+//            lock(employee);
+//        }
+
+//        if (employee.isAccountNonLocked() &&
+//                employee.getFailedAttempt()  == 4 ) {
+//            Event event = new Event( Calendar.getInstance().getTime(),"BRUTE_FORCE",
+//                    employee.getEmail().toLowerCase(),"/api/empl/payment","/api/empl/payment");
+//            eventRepository.save(event);
+//
+//        }
+//
+//        if (employee.isAccountNonLocked() &&
+//                employee.getFailedAttempt()  < 1 ) {
+//            Event event = new Event( Calendar.getInstance().getTime(),"LOGIN_FAILED",
+//                    employee.getEmail().toLowerCase(),"/api/empl/payment","/api/empl/payment");
+//            eventRepository.save(event);
+//
+//        }
+
 
         Payrolls checkPayroll = payrollRepository.findByEmployeeAndPeriod(email, period);
 
@@ -231,8 +283,8 @@ public class EmployeeService {
 
         String formattedPeriod = convertToNameOfMonthFormat(period);
         String formattedSalary = convertToFormattedString(checkPayroll.getSalary());
-        String name = employee.get().getName();
-        String lastname = employee.get().getLastname();
+        String name = employee.getName();
+        String lastname = employee.getLastname();
         EmployeeResponse employeeResponse = new EmployeeResponse(name,lastname,formattedPeriod,formattedSalary);
         return ResponseEntity.ok(employeeResponse);
     }
@@ -247,7 +299,7 @@ public class EmployeeService {
         Group businessGroup =  groupRepository.findByName("Business");
         Role userRole = roleRepository.findByName("USER");
         Role adminRole = roleRepository.findByName("ADMINISTRATOR");
-        Role accountantRole = roleRepository.findByName("ACCOUNTANT");
+
 
 
         if (employeeRepository.count() == 0) {
@@ -326,7 +378,6 @@ public class EmployeeService {
                             "/api/admin/user/role"));
         }
         Role updateRole = roleRepository.findByName(role);
-        Set<Role> roles = employee.getRoles();
         System.out.println("updateROle");
         System.out.println(updateRole);
         System.out.println("updateROle");
@@ -334,11 +385,11 @@ public class EmployeeService {
         if (operation == Operation.GRANT) {
             employee.getRoles().add(updateRole);
             employeeRepository.save(employee);
-            String object = "Grant role " + updateRole + " to " + employee.getEmail();
+            String object = "Grant role " + updateRole.getName() + " to " + employee.getEmail().toLowerCase();
             Event event = new Event( Calendar.getInstance().getTime(),"GRANT_ROLE",
                     userEmail, object,"/api/admin/user/role");
             eventRepository.save(event);
-            eventList.add(event);
+
         }
         if (operation == Operation.REMOVE) {
             if (!employee.getRoles().contains(updateRole)) {
@@ -356,11 +407,10 @@ public class EmployeeService {
 
             employee.getRoles().remove(updateRole);
             employeeRepository.save(employee);
-            String object = "Remove role " + updateRole + " to " + employee.getEmail();
+            String object = "Remove role " + updateRole.getName() + " to " + employee.getEmail().toLowerCase();
             Event event = new Event( Calendar.getInstance().getTime(),"REMOVE_ROLE",
                     userEmail, object,"/api/admin/user/role");
             eventRepository.save(event);
-            eventList.add(event);
         }
         EmployeeDTO employeeDTO = new EmployeeDTO(employee);
         return ResponseEntity.ok(employeeDTO);
@@ -397,9 +447,7 @@ public class EmployeeService {
             }
         }
         if (errorMessageList.isEmpty()) return message;
-        return errorMessageList
-                .stream()
-                .collect(Collectors.joining(", "));
+        return String.join(", ", errorMessageList);
     }
 
     public boolean isValidMMYYYYFormat(String inputDate) {
@@ -408,11 +456,8 @@ public class EmployeeService {
             YearMonth yearMonth = YearMonth.parse(inputDate, formatter);
 
             // Check if the month value is valid
-            if (yearMonth.getMonthValue() >= 1 && yearMonth.getMonthValue() <= 12) {
-                return true; // Input date is in valid format and month value is valid
-            } else {
-                return false; // Input date is in valid format but month value is invalid
-            }
+            // Input date is in valid format but month value is invalid
+            return yearMonth.getMonthValue() >= 1 && yearMonth.getMonthValue() <= 12; // Input date is in valid format and month value is valid
         } catch (DateTimeException e) {
             return false; // Input date is not in valid format
         }
@@ -455,12 +500,12 @@ public class EmployeeService {
         return employeeRepository.existsByEmailIgnoreCase(email);
     }
 
-    private Map<String, Object> createErrorResponse(HttpStatus status, String path) {
+    private Map<String, Object> createErrorResponse() {
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("timestamp", new Date());
-        errorResponse.put("status", status.value());
-        errorResponse.put("error", status.getReasonPhrase());
-        errorResponse.put("path", path);
+        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+        errorResponse.put("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
+        errorResponse.put("path", "/api/auth/signup");
         return errorResponse;
     }
 
@@ -512,8 +557,7 @@ public class EmployeeService {
         String centsText = cents + " cent(s)";
 
         // Combine dollars and cents portions
-        String formattedSalary = dollarsText + " " + centsText;
-        return formattedSalary;
+        return dollarsText + " " + centsText;
     }
 
 
@@ -524,6 +568,7 @@ public class EmployeeService {
     }
 
     public ResponseEntity<?> deleteUser(String email, UserDetails userDetails) {
+        String userEmail = userDetails.getUsername();
         System.out.println("YES I am inside DELETE USER METHOD for request /api/admin/user/petrpetrov@acme.com");
         if (!employeeRepository.existsByEmailIgnoreCase(email)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -540,6 +585,9 @@ public class EmployeeService {
                             "Can't remove ADMINISTRATOR role!", "/api/admin/user/" + email));
 
         }
+        Event event = new Event( Calendar.getInstance().getTime(),"REMOVE_ROLE",
+                userEmail, employee.getEmail().toLowerCase(),"/api/admin/user/role");
+        eventRepository.save(event);
         employeeRepository.delete(employee);
         return ResponseEntity.ok(new DeleteResponse(email, "Deleted successfully!"));
     }
@@ -584,11 +632,13 @@ public class EmployeeService {
         return false;
     }
 
-    public ResponseEntity<?> lockUnlockUser(LockUnlockRequest lockUnlockRequest) {
+    public ResponseEntity<?> lockUnlockUser(LockUnlockRequest lockUnlockRequest, UserDetails userDetails) {
+        String userEmail = userDetails.getUsername();
         LockUnlockEnum operation = lockUnlockRequest.getOperation();
         String email = lockUnlockRequest.getUser();
         if (!employeeRepository.existsByEmailIgnoreCase(email)) {
             //
+            System.out.println("The user doesnt exist");
         }
         Optional<Employee> byEmailIgnoreCase = employeeRepository.findByEmailIgnoreCase(email);
         Employee employee = byEmailIgnoreCase.orElse(new Employee());
@@ -598,13 +648,49 @@ public class EmployeeService {
                             "Can't lock the ADMINISTRATOR!",
                             "/api/admin/user/access"));
         }
-        String status = "";
+        String status;
         if (operation == LockUnlockEnum.LOCK) {
             status = "User " + email + " locked!";
+            employee.setAccountNonLocked(true);
+            employeeRepository.save(employee);
         } else {
             status = "User " + email + " unlocked!";
+            Event event = new Event( Calendar.getInstance().getTime(),"UNLOCK_USER",
+                    userEmail, employee.getEmail().toLowerCase(),"/api/admin/user/role");
+            eventRepository.save(event);
+            employee.setAccountNonLocked(false);
+            employeeRepository.save(employee);
         }
         return ResponseEntity.ok(new StatusResponse(status));
 
+    }
+    @Transactional
+    public void increaseFailedAttempts(Employee user) {
+        int newFailAttempts = user.getFailedAttempt() + 1;
+        employeeRepository.updateFailedAttempts(newFailAttempts, user.getEmail());
+    }
+    @Transactional
+    public void resetFailedAttempts(String email) {
+        employeeRepository.updateFailedAttempts(0, email);
+    }
+    @Transactional
+    public void lock(Employee user) {
+        user.setAccountNonLocked(false);
+        employeeRepository.save(user);
+    }
+
+
+
+    public ResponseEntity<?> getEvents() {
+
+        System.out.println("Inside getEvents method :- api/security/events");
+        List<Event> eventList = eventRepository.findAllByOrderByIdAsc();
+        if (eventList.isEmpty()) {
+            return ResponseEntity.ok(Collections.EMPTY_LIST);
+        }
+        return ResponseEntity.ok(eventList);
+    }
+    public void saveEvent(Event event) {
+        eventRepository.save(event);
     }
 }

@@ -4,6 +4,18 @@ buildscript {
     repositories {
         mavenCentral()
     }
+    test {
+        testLogging {
+            events "passed", "skipped", "failed" //, "standardOut", "standardError"
+
+            showExceptions true
+            exceptionFormat "full"
+            showCauses true
+            showStackTraces true
+
+            showStandardStreams = false
+        }
+    }
 
     dependencies {
         classpath "org.springframework.boot:spring-boot-gradle-plugin:$hs.spring.bootVersion"
@@ -22,6 +34,7 @@ repositories {
 sourceSets.main.resources.srcDirs = ["src/resources"]
 
 dependencies {
+    implementation 'com.google.guava:guava:30.1-jre'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'com.h2database:h2'
     implementation 'org.springframework.boot:spring-boot-starter-validation'

@@ -1,12 +1,10 @@
 package account.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -23,10 +21,11 @@ public class Employee {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
-//    @ManyToMany(fetch = FetchType.EAGER) // Since each user has one role, use ManyToOne association
-//    @JoinColumn(name = "role_id") // The column in "user" table that references the "role" table
-//    @JsonIgnore
-//    private List<Role> roles;
+    @Column(name = "account_non_locked")
+    private boolean accountNonLocked;
+
+    @Column(name = "failed_attempt")
+    private int failedAttempt;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -70,7 +69,7 @@ public class Employee {
 
     public String getEmail() {
         if (email != null) return email.toLowerCase();
-        return email;
+        return "";
     }
 
     public void setEmail(String email) {
@@ -108,6 +107,22 @@ public class Employee {
 
     public void setGroup(Group group) {
         this.group = group;
+    }
+
+    public boolean isAccountNonLocked() {
+        return accountNonLocked;
+    }
+
+    public void setAccountNonLocked(boolean accountNonLocked) {
+        this.accountNonLocked = accountNonLocked;
+    }
+
+    public int getFailedAttempt() {
+        return failedAttempt;
+    }
+
+    public void setFailedAttempt(int failedAttempt) {
+        this.failedAttempt = failedAttempt;
     }
 
     @Override

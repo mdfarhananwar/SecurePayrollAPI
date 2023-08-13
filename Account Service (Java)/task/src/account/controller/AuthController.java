@@ -2,11 +2,9 @@ package account.controller;
 
 import account.model.*;
 import account.service.EmployeeService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -105,8 +103,15 @@ public class AuthController {
     }
 
     @PutMapping("api/admin/user/access")
-    public ResponseEntity<?> lockUnlockUser(@RequestBody LockUnlockRequest lockUnlockRequest) {
-        return employeeService.lockUnlockUser(lockUnlockRequest);
+    public ResponseEntity<?> lockUnlockUser(@RequestBody LockUnlockRequest lockUnlockRequest,
+                                            @AuthenticationPrincipal UserDetails userDetails) {
+        return employeeService.lockUnlockUser(lockUnlockRequest, userDetails);
+    }
+
+    @GetMapping("/api/security/events/")
+    public ResponseEntity<?> getEvents() {
+        System.out.println("Enter : - api/security/events");
+        return employeeService.getEvents();
     }
 
 

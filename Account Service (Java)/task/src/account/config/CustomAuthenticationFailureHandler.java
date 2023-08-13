@@ -17,8 +17,8 @@ import java.util.Map;
 public class CustomAuthenticationFailureHandler
         implements AuthenticationFailureHandler {
 
-    private ObjectMapper objectMapper = new ObjectMapper();
-    private String customErrorMessage;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final String customErrorMessage;
     public CustomAuthenticationFailureHandler(String customErrorMessage) {
         this.customErrorMessage = customErrorMessage;
     }
@@ -54,6 +54,8 @@ private void sendErrorResponse(HttpServletResponse response, String errorMessage
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException exception) throws IOException, ServletException {
+        System.out.println("CustomLoginFailureHandler - Authentication failure!");
+        System.out.println("Farhan");
         sendErrorResponse(response, customErrorMessage, HttpStatus.UNAUTHORIZED.value());
     }
 

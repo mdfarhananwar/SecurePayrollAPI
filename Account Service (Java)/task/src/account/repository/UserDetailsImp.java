@@ -1,6 +1,9 @@
 package account.repository;
 
 import account.model.Employee;
+import account.service.LoginAttemptService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,13 +17,13 @@ public class UserDetailsImp implements UserDetails {
 
     private final String username;
     private final String password;
-//    private final Set<SimpleGrantedAuthority> rolesAndAuthorities;
+    private final boolean accountNonLocked;
+
 private final Set<SimpleGrantedAuthority> rolesAndAuthorities;
     public UserDetailsImp(Employee employee, List<GrantedAuthority> rolesAndAuthorities) {
         this.username = employee.getEmail().toLowerCase();
         this.password = employee.getPassword();
-//        this.rolesAndAuthorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));;
-
+        this.accountNonLocked = employee.isAccountNonLocked();
         this.rolesAndAuthorities = employee.getRoles().stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
                 .collect(Collectors.toSet());
@@ -50,7 +53,7 @@ private final Set<SimpleGrantedAuthority> rolesAndAuthorities;
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return accountNonLocked;
     }
 
     @Override

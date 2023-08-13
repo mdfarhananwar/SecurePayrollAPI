@@ -4,6 +4,8 @@ import account.model.Employee;
 import account.model.Privilege;
 import account.model.Role;
 import account.service.EmployeeService;
+import account.service.LoginAttemptService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -28,9 +30,16 @@ public class UserDetailsServiceImp implements UserDetailsService {
     public UserDetailsServiceImp(EmployeeService employeeService) {
         this.employeeService = employeeService;
     }
+    @Autowired
+    private LoginAttemptService loginAttemptService;
 
+    @Autowired
+    private HttpServletRequest request;
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        if (loginAttemptService.isBlocked()) {
+            throw new RuntimeException("blocked");
+        }
         System.out.println(username);
         System.out.println("Enter");
         logger.debug("Entering loadUserByUsername method");
