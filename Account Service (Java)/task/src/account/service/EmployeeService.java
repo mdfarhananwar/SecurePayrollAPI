@@ -142,6 +142,7 @@ public class EmployeeService {
 
         return ResponseEntity.ok(employeeResponses);
     }
+
     public ResponseEntity<?> changePassword(PasswordRequest passwordRequest,
                                             UserDetails userDetails) {
         String newPassword = passwordRequest.getNew_password();
@@ -407,7 +408,9 @@ public class EmployeeService {
 
             employee.getRoles().remove(updateRole);
             employeeRepository.save(employee);
-            String object = "Remove role " + updateRole.getName() + " to " + employee.getEmail().toLowerCase();
+            System.out.println(employee.toString());
+            //Remove role ACCOUNTANT from petrpetrov@acme.com
+            String object = "Remove role " + updateRole.getName() + " from " + employee.getEmail().toLowerCase();
             Event event = new Event( Calendar.getInstance().getTime(),"REMOVE_ROLE",
                     userEmail, object,"/api/admin/user/role");
             eventRepository.save(event);
@@ -520,7 +523,7 @@ public class EmployeeService {
         return errorResponse;
     }
 
-    private Map<String, Object> createUnauthorizedResponse() {
+    public Map<String, Object> createUnauthorizedResponse() {
         Map<String, Object> unauthorizedResponse = new HashMap<>();
         unauthorizedResponse.put("timestamp", new Date());
         unauthorizedResponse.put("status", HttpStatus.UNAUTHORIZED.value());
@@ -585,7 +588,7 @@ public class EmployeeService {
                             "Can't remove ADMINISTRATOR role!", "/api/admin/user/" + email));
 
         }
-        Event event = new Event( Calendar.getInstance().getTime(),"REMOVE_ROLE",
+        Event event = new Event( Calendar.getInstance().getTime(),"DELETE_USER",
                 userEmail, employee.getEmail().toLowerCase(),"/api/admin/user/role");
         eventRepository.save(event);
         employeeRepository.delete(employee);
@@ -650,16 +653,23 @@ public class EmployeeService {
         }
         String status;
         if (operation == LockUnlockEnum.LOCK) {
-            status = "User " + email + " locked!";
-            employee.setAccountNonLocked(true);
-            employeeRepository.save(employee);
-        } else {
-            status = "User " + email + " unlocked!";
-            Event event = new Event( Calendar.getInstance().getTime(),"UNLOCK_USER",
-                    userEmail, employee.getEmail().toLowerCase(),"/api/admin/user/role");
-            eventRepository.save(event);
+            status = "User " + email.toLowerCase() + " locked!";
             employee.setAccountNonLocked(false);
             employeeRepository.save(employee);
+            String object = "Lock user " + employee.getEmail().toLowerCase();
+            Event event = new Event( Calendar.getInstance().getTime(),"LOCK_USER",
+                    userEmail,object,"/api/admin/user/role");
+            eventRepository.save(event);
+        } else {
+            status = "User " + email.toLowerCase() + " unlocked!";
+            String object = "Unlock user " + employee.getEmail().toLowerCase();
+            employee.setAccountNonLocked(true);
+            employee.setFailedAttempt(0);
+            employeeRepository.save(employee);
+            Event event = new Event( Calendar.getInstance().getTime(),"UNLOCK_USER",
+                    userEmail,object,"/api/admin/user/role");
+            eventRepository.save(event);
+
         }
         return ResponseEntity.ok(new StatusResponse(status));
 
@@ -679,8 +689,6 @@ public class EmployeeService {
         employeeRepository.save(user);
     }
 
-
-
     public ResponseEntity<?> getEvents() {
 
         System.out.println("Inside getEvents method :- api/security/events");
@@ -692,5 +700,9 @@ public class EmployeeService {
     }
     public void saveEvent(Event event) {
         eventRepository.save(event);
+    }
+
+    public void saveUser(Employee user) {
+        employeeRepository.save(user);
     }
 }

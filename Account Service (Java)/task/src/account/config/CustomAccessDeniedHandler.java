@@ -44,7 +44,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         if (authentication != null && authentication.getName() != null) {
             String username = authentication.getName();
             Event event = new Event( Calendar.getInstance().getTime(),"ACCESS_DENIED",
-                    username, "/api/acct/payments","/api/acct/payments");
+                    username, request.getRequestURI(),request.getRequestURI());
             eventRepository.save(event);
         }
 

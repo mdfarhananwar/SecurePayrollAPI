@@ -24,6 +24,8 @@ public class Employee {
     @Column(name = "account_non_locked")
     private boolean accountNonLocked;
 
+    private boolean loginFailure;
+
     @Column(name = "failed_attempt")
     private int failedAttempt;
 
@@ -40,6 +42,8 @@ public class Employee {
     @JoinColumn(name = "group_id")
     @JsonIgnore
     private Group group;
+
+    private boolean isNonNull;
 
     public Employee() {
     }
@@ -125,6 +129,22 @@ public class Employee {
         this.failedAttempt = failedAttempt;
     }
 
+    public boolean isLoginFailure() {
+        return loginFailure;
+    }
+
+    public void setLoginFailure(boolean loginFailure) {
+        this.loginFailure = loginFailure;
+    }
+
+    public boolean isNonNull() {
+        return isNonNull;
+    }
+
+    public void setNonNull(boolean nonNull) {
+        isNonNull = nonNull;
+    }
+
     @Override
     public String toString() {
         return "Employee{" +
@@ -136,4 +156,5 @@ public class Employee {
                 ", role=" + roles +
                 '}';
     }
+
 }

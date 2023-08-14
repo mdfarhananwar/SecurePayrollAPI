@@ -24,28 +24,18 @@ public class SecurityConfiguration {
 
     private final UserDetailsServiceImp userDetailsService;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
+
+    private RestAuthenticationEntryPoint authenticationEntryPoint;
+
+
+
     @Autowired
-    private CustomLoginFailureHandler loginFailureHandler;
-
-
-    private CustomBasicAuthenticationEntryPoint authenticationEntryPoint;
-
-    @Autowired
-    public SecurityConfiguration(UserDetailsServiceImp userDetailsService, CustomAccessDeniedHandler customAccessDeniedHandler, CustomBasicAuthenticationEntryPoint authenticationEntryPoint) {
+    public SecurityConfiguration(UserDetailsServiceImp userDetailsService, CustomAccessDeniedHandler customAccessDeniedHandler, RestAuthenticationEntryPoint authenticationEntryPoint) {
         this.userDetailsService = userDetailsService;
         this.customAccessDeniedHandler = customAccessDeniedHandler;
         this.authenticationEntryPoint = authenticationEntryPoint;
     }
 
-//    @Bean
-//    public AuthenticationManager authenticationManager(HttpSecurity http, BCryptPasswordEncoder bCryptPasswordEncoder, UserDetailsService userDetailsService)
-//            throws Exception {
-//        return http.getSharedObject(AuthenticationManagerBuilder.class)
-//                .userDetailsService(userDetailsService)
-//                .passwordEncoder(bCryptPasswordEncoder)
-//                .and()
-//                .build();
-//    }
 @Bean
 public CustomAuthenticationFailureHandler accessDeniedHandler() {
     return new CustomAuthenticationFailureHandler("Access Denied!");
@@ -57,31 +47,22 @@ public CustomAuthenticationFailureHandler accessDeniedHandler() {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
                         .requestMatchers("/actuator/shutdown").permitAll()
-                        .requestMatchers("/api/acct/payments").hasRole("ACCOUNTANT")
-                        .requestMatchers("/api/empl/payment").hasAnyRole("USER", "ACCOUNTANT")
                         .requestMatchers("/api/auth/changepass").hasAnyRole("ADMINISTRATOR", "USER", "ACCOUNTANT")
+                        .requestMatchers("/api/empl/payment").hasAnyRole("USER", "ACCOUNTANT")
+                        .requestMatchers("/api/acct/payments").hasRole("ACCOUNTANT")
+
+
                         .requestMatchers("/api/admin/user/**").hasRole("ADMINISTRATOR")
                         .requestMatchers("/api/security/events/").hasRole("AUDITOR")
                         .anyRequest().authenticated()
-
                 )
-//                .exceptionHandling(exceptionHandling -> exceptionHandling
-//                        .accessDeniedHandler(customAccessDeniedHandler)
-//                )
-//                .formLogin(formLogin -> formLogin
-//                        .failureHandler(loginFailureHandler())
-//                )
+                .httpBasic(httpBasicConfigurer -> httpBasicConfigurer
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                )
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         .accessDeniedHandler(customAccessDeniedHandler)
 
                 )
-//                .formLogin(formLogin -> formLogin
-//                        .failureHandler(loginFailureHandler)
-//                        .successHandler(loginSuccessHandler)
-//                )
-//                .addFilterBefore(customBasicAuthenticationFilter(), BasicAuthenticationFilter.class) // Add custom filter
-//                .csrf(AbstractHttpConfigurer::disable)
-
                 .sessionManagement(sessionManagement -> sessionManagement
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
@@ -89,42 +70,15 @@ public CustomAuthenticationFailureHandler accessDeniedHandler() {
                 .csrf(AbstractHttpConfigurer::disable)
 
                 .headers(headers -> headers.frameOptions().disable())
-                .httpBasic(httpBasicConfigurer -> httpBasicConfigurer
-                        .authenticationEntryPoint(authenticationEntryPoint)
-                )
+
                 .httpBasic(Customizer.withDefaults());
         return http.build();
     }
-//
-//    @Bean
-//    public CustomAuthenticationFailureHandler authenticationFailureHandler() {
-//        String customErrorMessage = "Authentication failed. Please check your credentials.";
-//        return new CustomAuthenticationFailureHandler(customErrorMessage);
-//    }
+
     @Bean
     public LocaleResolver localeResolver() {
         return new AcceptHeaderLocaleResolver();
     }
-//    @Bean
-//    public MessageSource messageSource() {
-//        ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
-//        messageSource.setBasename("messages"); // Without .properties extension
-//        messageSource.setDefaultEncoding("UTF-8");
-//        return messageSource;
-//    }
-//    @Bean
-//    public CustomBasicAuthenticationFilter customBasicAuthenticationFilter() throws Exception {
-//        CustomBasicAuthenticationFilter filter = new CustomBasicAuthenticationFilter(authenticationManager(), customAuthenticationFailureHandler());
-//        filter.setAuthenticationEntryPoint(new BasicAuthenticationEntryPoint()); // Set custom entry point if needed
-//        return filter;
-//    }
-//    @Bean
-//    public CustomAuthenticationFailureHandler customAuthenticationFailureHandler() {
-//        return new CustomAuthenticationFailureHandler();
-//    }
-
-
-
 
 }
 

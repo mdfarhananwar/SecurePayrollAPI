@@ -1,12 +1,15 @@
 package account.repository;
 
+import account.config.UserNotFoundException;
 import account.model.Employee;
+import account.model.Event;
 import account.model.Privilege;
 import account.model.Role;
 import account.service.EmployeeService;
 import account.service.LoginAttemptService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -37,25 +40,26 @@ public class UserDetailsServiceImp implements UserDetailsService {
     private HttpServletRequest request;
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        if (loginAttemptService.isBlocked()) {
-            throw new RuntimeException("blocked");
-        }
+//        if (loginAttemptService.isBlocked()) {
+//            throw new RuntimeException("blocked");
+//        }
         System.out.println(username);
         System.out.println("Enter");
         logger.debug("Entering loadUserByUsername method");
         logger.debug("Username: {}", username);
         Employee employee = employeeService.findByEmail(username.toLowerCase());
-        System.out.println(employee.getPassword());
         System.out.println("password from employee");
-        System.out.println(employee.toString());
+        String path = request.getRequestURI();
+
+
         if (employee == null) {
-            throw new UsernameNotFoundException("Not found: " + username);
+            throw new UserNotFoundException("User not found: " + username, username, path);
         }
-       Set<Role> roles = employee.getRoles();
-//        List<String> roleNamesWithPrefix = roles.stream()
-//                .map(role -> "ROLE_" + role.getName())
-//                .collect(Collectors.toList());
-//        List<SimpleGrantedAuthority> grantedAuthorities = Collections.singletonList(new SimpleGrantedAuthority(roleNamesWithPrefix));
+        if (!employee.isAccountNonLocked()) {
+            throw new BadCredentialsException("User account is locked");
+        }
+
+        Set<Role> roles = employee.getRoles();
         List<String> roleNamesWithPrefix = roles.stream()
                 .map(role -> "ROLE_" + role.getName())
                 .collect(Collectors.toList());
@@ -67,13 +71,8 @@ public class UserDetailsServiceImp implements UserDetailsService {
         System.out.println("GRANTED AUTHORITIES");
 
         System.out.println("roles original");
-//        System.out.println(roles);
         System.out.println("roles original");
 
-//        Collection<? extends GrantedAuthority> authorities = getAuthorities(roles);
-//        System.out.println("authorities original");
-
-        //System.out.println(authorities);
         UserDetails userDetails = new org.springframework.security.core.userdetails.User(
                 employee.getEmail().toLowerCase(),
                 employee.getPassword(),
@@ -90,25 +89,6 @@ public class UserDetailsServiceImp implements UserDetailsService {
         return userDetails;
     }
     private Collection<? extends GrantedAuthority> getAuthorities(final Collection<Role> roles) {
-//        List<String> roleNames = roles.stream()
-//                .map(role -> "ROLE_" + role.getName())
-//                .collect(Collectors.toList());
-//        System.out.println("CHECKING ROLE NAME");
-//        System.out.println(roleNames);
-//        System.out.println("CHECKING ROLE NAME");
-//        Collection<Role> rolesWithPrefix = roles.stream()
-//                .map(role -> {
-//                    Role modifiedRole = new Role(role.getName(), role.getGroup()); // Create a new Role with the modified name
-//                    modifiedRole.setName("ROLE_" + role.getName());
-//                    modifiedRole.setId(role.getId());// Add the "ROLE_" prefix to the name
-//                    return modifiedRole;
-//                })
-//                .collect(Collectors.toList());
-//                System.out.println("CHECKING ROLE NAME");
-//        System.out.println(rolesWithPrefix);
-//        System.out.println("CHECKING ROLE NAME");
-
-//        return getGrantedAuthorities(getPrivileges(rolesWithPrefix));
         return getGrantedAuthorities(getPrivileges(roles));
     }
 
@@ -136,4 +116,3 @@ public class UserDetailsServiceImp implements UserDetailsService {
     }
 
 }
-//String roleWithPrefix = "ROLE_" + "USER";
