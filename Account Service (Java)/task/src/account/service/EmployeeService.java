@@ -2,6 +2,9 @@ package account.service;
 
 import account.model.*;
 import account.repository.*;
+import account.util.DateUtils;
+import account.util.EmployeeUtils;
+import account.util.ErrorResponseFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
@@ -13,10 +16,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.DateTimeException;
-import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -45,28 +44,27 @@ public class EmployeeService {
         System.out.println(employee.toString());
         System.out.println(employee.getPassword());
         System.out.println("Enter");
-        if (isNotValidEmployee(employee)) {
+        if (EmployeeUtils.isNotValidEmployee(employee)) {
             System.out.println("EnterISNOTVALID");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(createErrorResponse(
-                    ));
+                    .body(ErrorResponseFactory.createErrorResponse());
         }
         if (isEmailRegistered(employee.getEmail())) {
             System.out.println("EnterISEmailRegistered");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                             "User exist!", "/api/auth/signup"));
         }
-        if (isLengthNotMin(employee.getPassword())) {
+        if (EmployeeUtils.isLengthNotMin(employee.getPassword())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                             "The password length" +
                             " must be at least 12 chars!", "/api/auth/signup"));
         }
-        if (isPasswordBreached(employee.getPassword())) {
+        if (EmployeeUtils.isPasswordBreached(employee.getPassword())) {
             System.out.println("PasswordBreach");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                             "The password is in the hacker's database!",
                             "/api/auth/signup"));
         }
@@ -99,40 +97,14 @@ public class EmployeeService {
         Employee employee =  findByEmail(email);
         if (!employeeRepository.existsByEmailIgnoreCase(email)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(createUnauthorizedResponse());
+                    .body(ErrorResponseFactory.createUnauthorizedResponse());
         }
-
-//        if (employee.isAccountNonLocked() &&
-//                employee.getFailedAttempt()  > MAX_FAILED_ATTEMPTS) {
-//            String object = "Lock user " + employee.getEmail().toLowerCase();
-//            Event event = new Event( Calendar.getInstance().getTime(),"LOCK_USER",
-//                    employee.getEmail().toLowerCase(), object,"/api/empl/payment");
-//            eventRepository.save(event);
-//
-//            lock(employee);
-//        }
-//
-//        if (employee.isAccountNonLocked() &&
-//                employee.getFailedAttempt()  == 4 ) {
-//            Event event = new Event( Calendar.getInstance().getTime(),"BRUTE_FORCE",
-//                    employee.getEmail().toLowerCase(),"/api/empl/payment","/api/empl/payment");
-//            eventRepository.save(event);
-//
-//        }
-//
-//        if (employee.isAccountNonLocked() &&
-//                employee.getFailedAttempt()  == 1 ) {
-//            Event event = new Event( Calendar.getInstance().getTime(),"LOGIN_FAILED",
-//                    employee.getEmail().toLowerCase(),"/api/empl/payment","/api/empl/payment");
-//            eventRepository.save(event);
-//
-//        }
 
         List<Payrolls> payrolls = payrollRepository.findByEmployee(email);
         List<EmployeeResponse> employeeResponses = new ArrayList<>();
         for (Payrolls payroll : payrolls) {
-            String formattedPeriod = convertToNameOfMonthFormat(payroll.getPeriod());
-            String formattedSalary = convertToFormattedString(payroll.getSalary());
+            String formattedPeriod = DateUtils.convertToNameOfMonthFormat(payroll.getPeriod());
+            String formattedSalary = EmployeeUtils.convertToFormattedString(payroll.getSalary());
             String name = employee.getName();
             String lastname = employee.getLastname();
             EmployeeResponse employeeResponse = new EmployeeResponse(name, lastname, formattedPeriod, formattedSalary);
@@ -150,46 +122,32 @@ public class EmployeeService {
         System.out.println(newPassword);
         System.out.println("newPassword");
         String email = userDetails.getUsername();
-//        if (isNotValidUSerDetails(userDetails)) {
-//            System.out.println("EnterISNOTVALID");
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-//                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
-//                            "Not Valid User",
-//                            "/api/auth/changepass"));
-//        }
-//        if (isLengthNotMin(userDetailsPassword)) {
-//            System.out.println("userDetailsPassword problem");
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-//                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
-//                            "Password length must be 12 chars minimum!",
-//                            "/api/auth/changepass"));
-//        }
 
-        if (isLengthNotMin(newPassword)) {
+        if (EmployeeUtils.isLengthNotMin(newPassword)) {
             System.out.println("NewPassword problem");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                             "Password length must be 12 chars minimum!",
                             "/api/auth/changepass"));
         }
         Employee employee =  findByEmail(email);
         if (employee == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(createUnauthorizedResponse());
+                    .body(ErrorResponseFactory.createUnauthorizedResponse());
         }
 
         if (passwordEncoder().matches(newPassword, employee.getPassword())) {
             System.out.println("Both Passwords are same");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                             "The passwords must be different!",
                             "/api/auth/changepass"));
         }
 
-        if (isPasswordBreached(newPassword)) {
+        if (EmployeeUtils.isPasswordBreached(newPassword)) {
             System.out.println("PasswordBreach");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                             "The password is in the hacker's database!",
                             "/api/auth/changepass"));
         }
@@ -211,13 +169,13 @@ public class EmployeeService {
     public ResponseEntity<?> payment(List<Payrolls> payrolls) {
         if (isEmailNotValid(payrolls)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                             "Error!", "/api/acct/payments"));
         }
         String errorMessage = getErrorMessage(payrolls);
         if (!errorMessage.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                             errorMessage, "/api/acct/payments"));
         }
         StatusResponse statusResponse = new StatusResponse("Added successfully!");
@@ -233,7 +191,7 @@ public class EmployeeService {
         Long salary = payroll.getSalary();
         if (!payrollRepository.existsByEmployeeAndPeriod(email,period)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                             "Error!", "/api/acct/payments"));
         }
         Payrolls checkPayroll = payrollRepository.findByEmployeeAndPeriod(email, period);
@@ -247,43 +205,18 @@ public class EmployeeService {
 
         if (!payrollRepository.existsByEmployeeAndPeriod(email,period)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                             "Error!", "/api/empl/payment"));
         }
         Employee employee = findByEmail(email);
-//        if (employee.isAccountNonLocked() &&
-//                employee.getFailedAttempt()  > MAX_FAILED_ATTEMPTS) {
-//            String object = "Lock user " + employee.getEmail().toLowerCase();
-//            Event event = new Event( Calendar.getInstance().getTime(),"LOCK_USER",
-//                    employee.getEmail().toLowerCase(), object,"/api/empl/payment");
-//            eventRepository.save(event);
-//
-//            lock(employee);
-//        }
-
-//        if (employee.isAccountNonLocked() &&
-//                employee.getFailedAttempt()  == 4 ) {
-//            Event event = new Event( Calendar.getInstance().getTime(),"BRUTE_FORCE",
-//                    employee.getEmail().toLowerCase(),"/api/empl/payment","/api/empl/payment");
-//            eventRepository.save(event);
-//
-//        }
-//
-//        if (employee.isAccountNonLocked() &&
-//                employee.getFailedAttempt()  < 1 ) {
-//            Event event = new Event( Calendar.getInstance().getTime(),"LOGIN_FAILED",
-//                    employee.getEmail().toLowerCase(),"/api/empl/payment","/api/empl/payment");
-//            eventRepository.save(event);
-//
-//        }
 
 
         Payrolls checkPayroll = payrollRepository.findByEmployeeAndPeriod(email, period);
 
 
 
-        String formattedPeriod = convertToNameOfMonthFormat(period);
-        String formattedSalary = convertToFormattedString(checkPayroll.getSalary());
+        String formattedPeriod = DateUtils.convertToNameOfMonthFormat(period);
+        String formattedSalary =EmployeeUtils.convertToFormattedString(checkPayroll.getSalary());
         String name = employee.getName();
         String lastname = employee.getLastname();
         EmployeeResponse employeeResponse = new EmployeeResponse(name,lastname,formattedPeriod,formattedSalary);
@@ -320,7 +253,7 @@ public class EmployeeService {
         Optional<Employee> employeeOptionalUser = employeeRepository.findByEmailIgnoreCase(userEmail);
         Employee employeeUser = employeeOptionalUser.orElse(new Employee());
 
-        if (!isUserAdmin(employeeUser)) {
+        if (!EmployeeUtils.isUserAdmin(employeeUser)) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("timestamp", new Date());
             errorResponse.put("status", HttpStatus.FORBIDDEN.value());
@@ -331,7 +264,7 @@ public class EmployeeService {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
         }
         if (roleRequest != null) {
-            System.out.println(roleRequest.toString());
+            System.out.println(roleRequest);
         } else {
             System.out.println("ROle Request is null");
         }
@@ -345,36 +278,36 @@ public class EmployeeService {
 
         if (!employeeRepository.existsByEmailIgnoreCase(email)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(createErrorForRegisteredUser(HttpStatus.NOT_FOUND,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.NOT_FOUND,
                             "User not found!", "/api/admin/user/role"));
         }
         if (!roleRepository.existsByName(role)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(createErrorForRegisteredUser(HttpStatus.NOT_FOUND,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.NOT_FOUND,
                             "Role not found!", "/api/admin/user/role"));
         }
 
 //        Employee employee = findByEmail(email);
         Optional<Employee> employeeOptional = employeeRepository.findByEmailIgnoreCase(email);
         Employee employee = employeeOptional.orElse(new Employee());
-        if (isUserAdmin(employee)) {
+        if (EmployeeUtils.isUserAdmin(employee)) {
             if (operation == Operation.GRANT) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                        .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                                 "The user cannot combine administrative and business roles!",
                                 "/api/admin/user/role"));
             } else {
               //"Can't remove ADMINISTRATOR role!"
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                        .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                                 "Can't remove ADMINISTRATOR role!" ,
                                 "/api/admin/user/role"));
             }
 
         } else {
-          if (isRoleAdmin(role))
+          if (EmployeeUtils.isRoleAdmin(role))
               return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                             "The user cannot combine administrative and business roles!",
                             "/api/admin/user/role"));
         }
@@ -395,20 +328,20 @@ public class EmployeeService {
         if (operation == Operation.REMOVE) {
             if (!employee.getRoles().contains(updateRole)) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                        .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                                 "The user does not have a role!",
                                 "/api/admin/user/role"));
             }
             if (employee.getRoles().size() == 1) {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                            .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                            .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                                     "The user must have at least one role!",
                                     "/api/admin/user/role"));
             }
 
             employee.getRoles().remove(updateRole);
             employeeRepository.save(employee);
-            System.out.println(employee.toString());
+            System.out.println(employee);
             //Remove role ACCOUNTANT from petrpetrov@acme.com
             String object = "Remove role " + updateRole.getName() + " from " + employee.getEmail().toLowerCase();
             Event event = new Event( Calendar.getInstance().getTime(),"REMOVE_ROLE",
@@ -437,15 +370,14 @@ public class EmployeeService {
         String message = "";
         List<String> errorMessageList = new ArrayList<>();
         for (int i = 0; i < payrolls.size(); i++) {
-            String email = payrolls.get(i).getEmployee();
             String period = payrolls.get(i).getPeriod();
             Long salary = payrolls.get(i).getSalary();
-            if (!isValidMMYYYYFormat(period)) {
+            if (!DateUtils.isValidMMYYYYFormat(period)) {
                 message = "payments[" + i + "].period: Wrong date!";
                 errorMessageList.add(message);
             }
             // if period contains in the list, not unique
-            if (isSalaryNotValid(salary)) {
+            if (EmployeeUtils.isSalaryNotValid(salary)) {
                 message = "payments[" + i + "].salary: Salary must be non negative!";
             }
         }
@@ -453,47 +385,7 @@ public class EmployeeService {
         return String.join(", ", errorMessageList);
     }
 
-    public boolean isValidMMYYYYFormat(String inputDate) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-yyyy");
-        try {
-            YearMonth yearMonth = YearMonth.parse(inputDate, formatter);
 
-            // Check if the month value is valid
-            // Input date is in valid format but month value is invalid
-            return yearMonth.getMonthValue() >= 1 && yearMonth.getMonthValue() <= 12; // Input date is in valid format and month value is valid
-        } catch (DateTimeException e) {
-            return false; // Input date is not in valid format
-        }
-    }
-
-    public boolean isSalaryNotValid(Long salary) {
-        return salary < 0;
-    }
-
-
-    public boolean isNotValidEmployee(EmployeeRequest employee) {
-        return employee == null ||
-                employee.getEmail() == null ||
-                employee.getEmail().isEmpty() ||
-                !employee.getEmail().endsWith("@acme.com") ||
-                employee.getName() == null ||
-                employee.getName().isEmpty() ||
-                employee.getLastname() == null ||
-                employee.getLastname().isEmpty() ||
-                employee.getPassword() == null ||
-                employee.getPassword().isEmpty();
-
-    }
-    public boolean isNotValidUSerDetails(UserDetails userDetails) {
-        return userDetails == null ||
-                userDetails.getUsername() == null ||
-                userDetails.getUsername().isEmpty() ||
-                !userDetails.getUsername().endsWith("@acme.com") ||
-
-                userDetails.getPassword() == null ||
-                userDetails.getPassword().isEmpty();
-
-    }
     public Employee findByEmail(String email) {
         Optional<Employee> optionalEmployee = employeeRepository.findByEmailIgnoreCase(email);
         return optionalEmployee.orElse(null);
@@ -502,67 +394,6 @@ public class EmployeeService {
     private boolean isEmailRegistered(String email) {
         return employeeRepository.existsByEmailIgnoreCase(email);
     }
-
-    private Map<String, Object> createErrorResponse() {
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("timestamp", new Date());
-        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
-        errorResponse.put("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
-        errorResponse.put("path", "/api/auth/signup");
-        return errorResponse;
-    }
-
-
-    private Map<String, Object> createErrorForRegisteredUser(HttpStatus status, String message, String path) {
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("timestamp", new Date());
-        errorResponse.put("status", status.value());
-        errorResponse.put("error", status.getReasonPhrase());
-        errorResponse.put("message", message);
-        errorResponse.put("path", path);
-        return errorResponse;
-    }
-
-    public Map<String, Object> createUnauthorizedResponse() {
-        Map<String, Object> unauthorizedResponse = new HashMap<>();
-        unauthorizedResponse.put("timestamp", new Date());
-        unauthorizedResponse.put("status", HttpStatus.UNAUTHORIZED.value());
-        unauthorizedResponse.put("error", HttpStatus.UNAUTHORIZED.getReasonPhrase());
-        unauthorizedResponse.put("message", "");
-        unauthorizedResponse.put("path", "/api/empl/payment");
-        return unauthorizedResponse;
-    }
-    public boolean isPasswordBreached(String password) {
-        List<String> breachedPassword = new ArrayList<>(List.of("PasswordForJanuary", "PasswordForFebruary",
-                "PasswordForMarch", "PasswordForApril",
-                "PasswordForMay", "PasswordForJune", "PasswordForJuly", "PasswordForAugust",
-                "PasswordForSeptember", "PasswordForOctober", "PasswordForNovember", "PasswordForDecember"));
-        return breachedPassword.contains(password);
-    }
-    public boolean isLengthNotMin(String password) {
-        return password == null ||
-                password.length() < 12;
-    }
-
-    public String convertToNameOfMonthFormat(String inputDate) {
-        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("MM-yyyy");
-        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("MMMM-yyyy");
-        YearMonth yearMonth = YearMonth.parse(inputDate, inputFormatter);
-        LocalDate localDate = yearMonth.atDay(1); // Get the first day of the month
-        return localDate.format(outputFormatter);
-    }
-
-    public String convertToFormattedString(long salary) {
-        long dollars = salary / 100; // Extract dollars portion
-        long cents = salary % 100;   // Extract cents portion
-
-        String dollarsText = dollars + " dollar(s)";
-        String centsText = cents + " cent(s)";
-
-        // Combine dollars and cents portions
-        return dollarsText + " " + centsText;
-    }
-
 
 
     @Bean
@@ -575,16 +406,14 @@ public class EmployeeService {
         System.out.println("YES I am inside DELETE USER METHOD for request /api/admin/user/petrpetrov@acme.com");
         if (!employeeRepository.existsByEmailIgnoreCase(email)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(createErrorForRegisteredUser(HttpStatus.NOT_FOUND,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.NOT_FOUND,
                             "User not found!", "/api/admin/user/" + email ));
         }
         Optional<Employee> employeeOptional = employeeRepository.findByEmailIgnoreCase(email);
         Employee employee = employeeOptional.orElse(new Employee());
-        System.out.println(employee.toString());
-        System.out.println(isUserAdmin(employee));
-        if (isUserAdmin(employee)) {
+        if (EmployeeUtils.isUserAdmin(employee)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                             "Can't remove ADMINISTRATOR role!", "/api/admin/user/" + email));
 
         }
@@ -601,11 +430,10 @@ public class EmployeeService {
         System.out.println(email);
         Optional<Employee> employeeOptional = employeeRepository.findByEmailIgnoreCase(email);
         Employee employee = employeeOptional.orElse(new Employee());
-        System.out.println(isUserAdmin(employee));
-        System.out.println("isUserAdmin(employee)");
-        if (!isUserAdmin(employee)) {
+
+        if (!EmployeeUtils.isUserAdmin(employee)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(createErrorForRegisteredUser(HttpStatus.FORBIDDEN,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.FORBIDDEN,
                             "Access Denied!", "api/admin/user/"));
 
         }
@@ -614,25 +442,6 @@ public class EmployeeService {
                 .map(EmployeeDTO::new) // Assuming EmployeeDTO constructor takes Employee as parameter
                 .collect(Collectors.toList());
         return ResponseEntity.ok(employeeDTOs);
-    }
-
-    public boolean isRoleAdmin(String role) {
-            return role.equals("ADMINISTRATOR");
-    }
-
-    public boolean isUserAdmin(Employee employee) {
-        Set<Role> roles = employee.getRoles();
-        System.out.println(roles);
-        System.out.println("chceking roles ");
-        for (Role role : roles) {
-            System.out.println(role);
-            System.out.println(role.getName());
-            System.out.println("NAME OF ROLES");
-            if (role.getName().equals("ADMINISTRATOR")) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public ResponseEntity<?> lockUnlockUser(LockUnlockRequest lockUnlockRequest, UserDetails userDetails) {
@@ -645,9 +454,9 @@ public class EmployeeService {
         }
         Optional<Employee> byEmailIgnoreCase = employeeRepository.findByEmailIgnoreCase(email);
         Employee employee = byEmailIgnoreCase.orElse(new Employee());
-        if (isUserAdmin(employee)) {
+        if (EmployeeUtils.isUserAdmin(employee)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
+                    .body(ErrorResponseFactory.createErrorForRegisteredUser(HttpStatus.BAD_REQUEST,
                             "Can't lock the ADMINISTRATOR!",
                             "/api/admin/user/access"));
         }
@@ -702,7 +511,4 @@ public class EmployeeService {
         eventRepository.save(event);
     }
 
-    public void saveUser(Employee user) {
-        employeeRepository.save(user);
-    }
 }
