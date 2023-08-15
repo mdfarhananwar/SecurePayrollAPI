@@ -24,8 +24,6 @@ public class Employee {
     @Column(name = "account_non_locked")
     private boolean accountNonLocked;
 
-    private boolean loginFailure;
-
     @Column(name = "failed_attempt")
     private int failedAttempt;
 
@@ -42,8 +40,6 @@ public class Employee {
     @JoinColumn(name = "group_id")
     @JsonIgnore
     private Group group;
-
-    private boolean isNonNull;
 
     public Employee() {
     }
@@ -77,8 +73,12 @@ public class Employee {
     }
 
     public void setEmail(String email) {
-        if (email != null) this.email = email.toLowerCase();
-        this.email = email;
+        if (email != null) {
+            this.email = email.toLowerCase();
+        } else {
+            this.email = "";
+        }
+
     }
 
     public String getPassword() {
@@ -127,22 +127,6 @@ public class Employee {
 
     public void setFailedAttempt(int failedAttempt) {
         this.failedAttempt = failedAttempt;
-    }
-
-    public boolean isLoginFailure() {
-        return loginFailure;
-    }
-
-    public void setLoginFailure(boolean loginFailure) {
-        this.loginFailure = loginFailure;
-    }
-
-    public boolean isNonNull() {
-        return isNonNull;
-    }
-
-    public void setNonNull(boolean nonNull) {
-        isNonNull = nonNull;
     }
 
     @Override
